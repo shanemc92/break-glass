@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data: blob:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>tool-name</title>
+
+<!-- Webfonts are off by default so the file works offline and from file://.
+     To turn them on, uncomment the two lines below and swap the CSP above for:
+     ... style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; ...
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+-->
+
+<style>
+
+/* ============================================================
+   tool-name
+   One structural stylesheet driven by per-theme design tokens.
+   Two themes, same terminal styling, opposite palettes.
+   ============================================================ */
+
+:root {
+    --wrap: 880px;   /* the card's column width */
+    --font: 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* ---------- Tokens: Dark (default) ---------- */
+:root,
+html[data-theme="dark"] {
+    --bg:          #0b0e14;
+    --card:        #161b25;
+    --sunken:      #11161f;
+    --raised:      #1b212d;
+    --line:        #262d3a;
+    --line-soft:   #1e2431;
+    --fg:          #c7ccd6;
+    --fg-dim:      #7b8496;
+    --fg-faint:    #59616f;
+    --accent:      #58a6ff;
+    --accent-soft: rgba(88, 166, 255, 0.14);
+    --accent-ink:  #06111f;
+    --toggle-on:   #3fb950;
+    --toggle-ink:  #06210c;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 18px 50px -18px rgba(0, 0, 0, 0.75);
+    --bad:         #f87171;
+    --warn:        #d29922;
+    --ok:          #3fb950;
+}
+
+/* ---------- Tokens: Light ---------- */
+html[data-theme="light"] {
+    --bg:          #e9edf2;
+    --card:        #ffffff;
+    --sunken:      #f3f5f8;
+    --raised:      #fbfcfd;
+    --line:        #d3dae3;
+    --line-soft:   #e5eaf0;
+    --fg:          #0e1620;
+    --fg-dim:      #5f6b7a;
+    --fg-faint:    #8b96a5;
+    --accent:      #0f766e;
+    --accent-soft: rgba(15, 118, 110, 0.10);
+    --accent-ink:  #ffffff;
+    --toggle-on:   #0f766e;
+    --toggle-ink:  #ffffff;
+    --radius:      10px;
+    --radius-sm:   6px;
+    --shadow:      0 1px 2px rgba(16, 24, 40, 0.05), 0 14px 36px -16px rgba(16, 24, 40, 0.28);
+    --bad:         #dc2626;
+    --warn:        #b45309;
+    --ok:          #0f766e;
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 28px 20px 48px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font);
+    font-size: 13.5px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent); color: var(--accent-ink); }
+::placeholder { color: var(--fg-faint); opacity: 1; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ============================================================
+   Window
+   ============================================================ */
+.container {
+    width: 100%;
+    max-width: var(--wrap);
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+/* ---------- Title bar ---------- */
+.titlebar {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 12px 11px 16px;
+    background: var(--sunken);
+    border-bottom: 1px solid var(--line-soft);
+}
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot:nth-child(1) { background: #ff5f56; }
+.dot:nth-child(2) { background: #ffbd2e; }
+.dot:nth-child(3) { background: #27c93f; }
+
+/* Centred on the window rather than after the dots, so it stays centred
+   whatever sits on the right. */
+.titlebar-title {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12.5px;
+    color: var(--fg-dim);
+    pointer-events: none;
+    white-space: nowrap;
+}
+.titlebar .spacer { flex: 1; }
+
+/* ---------- Theme toggle ---------- */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 27px;
+    height: 27px;
+    padding: 0;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+}
+.icon-btn:hover { color: var(--accent); border-color: var(--line); }
+.icon-btn svg {
+    width: 15px; height: 15px;
+    fill: none; stroke: currentColor;
+    stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round;
+}
+/* Show the icon for the theme you would switch to. */
+html[data-theme="dark"]  .ic-moon { display: none; }
+html[data-theme="light"] .ic-sun  { display: none; }
+
+/* ---------- Tab strip ---------- */
+.tabs {
+    display: flex;
+    padding: 0 8px;
+    background: var(--sunken);
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg-dim);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 9px 15px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+.tab:hover { color: var(--fg); }
+.tab[aria-selected="true"] {
+    color: var(--accent);
+    background: var(--card);
+    border-bottom-color: var(--accent);
+}
+
+.body { padding: 20px 22px 24px; }
+section[hidden] { display: none; }
+
+/* ---------- Prompt line ---------- */
+.prompt { margin-bottom: 6px; font-size: 13px; }
+.prompt .path { color: var(--accent); }
+.prompt .chev { color: var(--fg-faint); }
+.comment { color: var(--fg-faint); font-size: 12.5px; margin-bottom: 20px; }
+
+/* ============================================================
+   Sections
+   ============================================================ */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.section-header span {
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+}
+.section-header span::before { content: '// '; color: var(--fg-faint); }
+
+.panel {
+    background: var(--sunken);
+    border: 1px solid var(--line-soft);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+/* ============================================================
+   Controls
+   ============================================================ */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 13px;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+.btn:active { transform: scale(0.985); }
+.btn:disabled { opacity: 0.55; cursor: default; }
+.btn:disabled:hover { color: var(--fg); border-color: var(--line); background: var(--raised); }
+
+.btn-primary { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover { color: var(--accent-ink); background: var(--accent); filter: brightness(1.12); }
+.btn-danger:hover { color: var(--bad); border-color: var(--bad); background: transparent; }
+.btn-sm { padding: 5px 9px; font-size: 12px; }
+
+/* ---------- Inputs ---------- */
+.field {
+    width: 100%;
+    font: inherit;
+    font-size: 12.5px;
+    color: var(--fg);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+    padding: 7px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+}
+.field:hover { border-color: var(--fg-faint); }
+.field:focus { border-color: var(--accent); }
+textarea.field { line-height: 1.6; resize: vertical; }
+select.field { cursor: pointer; }
+
+label.f {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 11px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--fg-dim);
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+.row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.spacer { flex: 1; }
+
+/* ---------- Toggle rows ---------- */
+.toggle-group { display: flex; flex-direction: column; gap: 12px; }
+.toggle-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 30px;
+}
+.toggle-label { font-size: 12.5px; color: var(--fg); }
+
+.toggle-switch {
+    position: relative;
+    flex: 0 0 auto;
+    width: 40px;
+    height: 22px;
+    border-radius: 11px;
+    background: var(--line);
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: background 0.18s, border-color 0.18s;
+}
+.toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--fg-faint);
+    transition: transform 0.18s, background 0.18s;
+}
+.toggle-switch.active { background: var(--toggle-on); border-color: var(--toggle-on); }
+.toggle-switch.active::after { transform: translateX(18px); background: var(--toggle-ink); }
+
+/* ---------- Drop zone ---------- */
+.drop {
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+    padding: 22px 14px;
+    text-align: center;
+    color: var(--fg-dim);
+    background: var(--raised);
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.drop:hover, .drop.over { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+.drop b { display: block; margin-bottom: 2px; color: var(--fg); font-weight: 500; }
+.drop:hover b { color: var(--accent); }
+
+/* ---------- Text ---------- */
+pre {
+    margin: 0;
+    padding: 12px;
+    max-height: 340px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12.5px;
+    line-height: 1.6;
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-sm);
+}
+code { font-size: 12px; }
+mark { background: var(--accent-soft); color: var(--accent); border-radius: 3px; padding: 1px 3px; }
+.log { font-size: 12px; color: var(--fg-dim); }
+.log .ok { color: var(--ok); } .log .warn { color: var(--warn); }
+.log .bad { color: var(--bad); } .log .a { color: var(--accent); }
+.note { font-size: 11.5px; line-height: 1.65; color: var(--fg-dim); }
+.note code { color: var(--accent); }
+
+/* ---------- Table ---------- */
+table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+th {
+    text-align: left;
+    padding: 8px;
+    font-size: 10px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--fg-dim);
+    border-bottom: 1px solid var(--line);
+}
+td { padding: 6px 8px; border-bottom: 1px solid var(--line-soft); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+td .field { padding: 5px 8px; }
+.empty {
+    padding: 26px;
+    text-align: center;
+    color: var(--fg-dim);
+    border: 1px dashed var(--line);
+    border-radius: var(--radius-sm);
+}
+
+/* ============================================================
+   Notification
+   ============================================================ */
+.notification {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translate(-50%, 20px);
+    z-index: 300;
+    padding: 10px 18px;
+    font-size: 12.5px;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s, transform 0.22s;
+}
+.notification.show { opacity: 1; transform: translate(-50%, 0); }
+.notification.error { color: #fff; background: var(--bad); }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 640px) {
+    body { padding: 14px 10px 32px; }
+    .body { padding: 16px; }
+    .titlebar-title { display: none; }
+    .grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.001ms !important;
+    }
+}
+
+/* ============================================================
+   Print: one light palette for both themes
+   ============================================================ */
+@media print {
+    :root, html[data-theme="dark"], html[data-theme="light"] {
+        color-scheme: light;
+        --bg: #ffffff; --card: #ffffff; --sunken: #fafafa; --raised: #ffffff;
+        --line: #999999; --line-soft: #cccccc;
+        --fg: #111111; --fg-dim: #555555; --fg-faint: #777777;
+        --accent: #0b4f8a; --accent-soft: transparent; --accent-ink: #ffffff;
+        --shadow: none;
+    }
+    body { padding: 0; display: block; }
+    .container { max-width: none; border: none; box-shadow: none; }
+    .titlebar, .tabs, .drop, .notification, .btn, .noprint { display: none !important; }
+    .body { padding: 0; }
+    section[hidden] { display: block !important; }
+    .panel { break-inside: avoid; page-break-inside: avoid; }
+    a[href]::after { content: " (" attr(href) ")"; font-size: 10px; color: #555; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="titlebar">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="titlebar-title">tool-name</div>
+        <div class="spacer"></div>
+        <button class="icon-btn" id="themeBtn" type="button" aria-pressed="false" title="Switch theme">
+            <svg class="ic-sun" viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="4.2"></circle>
+                <path d="M12 2.5v2.2M12 19.3v2.2M4.2 4.2l1.6 1.6M18.2 18.2l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.2 19.8l1.6-1.6M18.2 5.8l1.6-1.6"></path>
+            </svg>
+            <svg class="ic-moon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 14.2A8.2 8.2 0 0 1 9.8 4a8.2 8.2 0 1 0 10.2 10.2z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="tabs" role="tablist">
+        <button class="tab" id="tab-work" role="tab" aria-selected="true" aria-controls="pane-work">work</button>
+        <button class="tab" id="tab-about" role="tab" aria-selected="false" aria-controls="pane-about">about</button>
+    </div>
+
+    <div class="body">
+
+        <div class="prompt"><span class="path">~/tool-name</span> <span class="chev">&gt;</span> ready</div>
+        <div class="comment"># one line description, runs in your browser, nothing is uploaded</div>
+
+        <section id="pane-work" role="tabpanel" aria-labelledby="tab-work">
+
+            <div class="panel noprint">
+                <div class="row">
+                    <button class="btn" id="btnLoad">Load JSON</button>
+                    <button class="btn btn-primary" id="btnSave">Save JSON</button>
+                    <button class="btn" id="btnCsv">Export CSV</button>
+                    <button class="btn" id="btnPrint">Print</button>
+                    <div class="spacer"></div>
+                    <button class="btn btn-danger" id="btnReset">Reset</button>
+                </div>
+                <input type="file" id="fileIn" accept=".json,application/json" hidden>
+                <div class="note" style="margin-top:10px">Ctrl+S saves, Ctrl+O loads. Work is kept in this browser until you reset.</div>
+            </div>
+
+            <div class="panel">
+                <div class="section-header"><span>Details</span></div>
+                <div class="grid">
+                    <label class="f">Title<input type="text" class="field" id="mTitle" placeholder="Job or customer name"></label>
+                    <label class="f">Author<input type="text" class="field" id="mAuthor" placeholder="Your name"></label>
+                    <label class="f">Date<input type="date" class="field" id="mDate"></label>
+                </div>
+            </div>
+
+            <!-- DEMO START: delete this markup and the demo block in the script -->
+            <div class="panel">
+                <div class="section-header">
+                    <span>Items</span>
+                    <div class="row noprint">
+                        <div class="toggle-item" style="gap:8px">
+                            <span class="toggle-label">Hide done</span>
+                            <div class="toggle-switch" id="tgHide" role="switch" aria-checked="false" tabindex="0"></div>
+                        </div>
+                        <button class="btn btn-sm" id="btnAdd">Add row</button>
+                    </div>
+                </div>
+                <div id="rows"></div>
+                <div class="log" style="margin-top:12px" id="stat"></div>
+            </div>
+
+            <div class="panel noprint">
+                <div class="section-header"><span>Input file</span></div>
+                <div class="drop" id="drop" tabindex="0" role="button">
+                    <b>Drop a file here</b>
+                    or click to browse
+                </div>
+                <div class="log" style="margin-top:12px" id="dropinfo"></div>
+            </div>
+            <!-- DEMO END -->
+
+        </section>
+
+        <section id="pane-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+            <div class="panel">
+                <div class="section-header"><span>About</span></div>
+                <div class="note">
+                    What this tool does, what it does not do, and where the data goes.
+                    Everything runs client side. There is no network call and no analytics.
+                </div>
+            </div>
+        </section>
+
+        <div class="note">tool-name v1.0.0 &middot; MIT &middot; <code>github.com/shanemc92</code></div>
+    </div>
+</div>
+
+<div class="notification" id="notification" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ---------- app identity ---------- */
+const APP = { id: "tool-name", version: "1.0.0", schema: 1 };
+
+/* ---------- dom helpers ---------- */
+const $  = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const el = (tag, cls, txt) => {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (txt != null) n.textContent = txt;
+    return n;
+};
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+const today = () => new Date().toISOString().slice(0, 10);
+
+/* ---------- storage (file:// and private mode safe) ---------- */
+const store = {
+    get(k)   { try { return localStorage.getItem(APP.id + ":" + k); } catch (e) { return null; } },
+    set(k,v) { try { localStorage.setItem(APP.id + ":" + k, v); return true; } catch (e) { return false; } },
+    del(k)   { try { localStorage.removeItem(APP.id + ":" + k); } catch (e) {} }
+};
+
+/* ---------- notification ---------- */
+let notifyT;
+function notify(msg, isError) {
+    const n = $("#notification");
+    n.textContent = msg;
+    n.classList.toggle("error", !!isError);
+    n.classList.add("show");
+    clearTimeout(notifyT);
+    notifyT = setTimeout(() => n.classList.remove("show"), 2200);
+}
+
+/* ---------- theme ---------- */
+const themeBtn = $("#themeBtn");
+function applyTheme(theme) {
+    const t = theme === "light" ? "light" : "dark";
+    document.documentElement.dataset.theme = t;
+    themeBtn.setAttribute("aria-pressed", String(t === "light"));
+    themeBtn.title = t === "dark" ? "Switch to light" : "Switch to dark";
+}
+themeBtn.addEventListener("click", () => {
+    const next = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+    applyTheme(next);
+    if (!store.set("theme", next))
+        notify("Theme changed for this session only, saving it needs the page served over http");
+});
+applyTheme(store.get("theme") || "dark");
+
+/* ---------- tabs ---------- */
+const TABS = [["work", "pane-work"], ["about", "pane-about"]];
+function tab(which) {
+    TABS.forEach(([id, pane]) => {
+        $("#tab-" + id).setAttribute("aria-selected", String(id === which));
+        $("#" + pane).hidden = id !== which;
+    });
+}
+TABS.forEach(([id]) => $("#tab-" + id).addEventListener("click", () => tab(id)));
+
+/* ---------- toggles ---------- */
+function toggle(node, onChange) {
+    const flip = () => {
+        const on = !node.classList.contains("active");
+        node.classList.toggle("active", on);
+        node.setAttribute("aria-checked", String(on));
+        onChange(on);
+    };
+    node.addEventListener("click", flip);
+    node.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); flip(); }
+    });
+}
+
+/* ---------- files ---------- */
+function download(name, text, type) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: type || "text/plain;charset=utf-8" }));
+    a.download = name;
+    a.click();
+    setTimeout(() => { try { URL.revokeObjectURL(a.href); } catch (e) {} }, 1000);
+}
+function read(file, cb) {
+    const r = new FileReader();
+    r.onload = () => cb(String(r.result), file);
+    r.onerror = () => notify("Could not read that file", true);
+    r.readAsText(file);
+}
+function dropzone(zone, input, cb) {
+    zone.addEventListener("click", () => input.click());
+    zone.addEventListener("keydown", e => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); input.click(); }
+    });
+    input.addEventListener("change", () => {
+        if (input.files[0]) read(input.files[0], cb);
+        input.value = "";
+    });
+    zone.addEventListener("dragover", e => { e.preventDefault(); zone.classList.add("over"); });
+    zone.addEventListener("dragleave", () => zone.classList.remove("over"));
+    zone.addEventListener("drop", e => {
+        e.preventDefault();
+        zone.classList.remove("over");
+        const f = e.dataTransfer.files[0];
+        if (f) read(f, cb);
+    });
+}
+const slug = s => (s || APP.id).replace(/[^a-z0-9]+/gi, "-").toLowerCase().replace(/^-|-$/g, "");
+const fname = ext => `${slug(state.meta.title)}-${state.meta.date || today()}.${ext}`;
+
+/* ---------- csv ---------- */
+const csvCell = v => {
+    const s = v == null ? "" : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const toCsv = rows => rows.map(r => r.map(csvCell).join(",")).join("\r\n");
+
+/* ---------- state ---------- */
+function blankState() {
+    return {
+        schema: APP.schema,
+        app: APP.id,
+        meta: { title: "", author: "", date: today() },
+        items: []
+    };
+}
+let state = blankState();
+
+function persist() { store.set("state", JSON.stringify(state)); }
+function restore() {
+    const raw = store.get("state");
+    if (!raw) return false;
+    try {
+        const d = JSON.parse(raw);
+        if (d && d.app === APP.id) { state = Object.assign(blankState(), d); return true; }
+    } catch (e) {}
+    return false;
+}
+
+function saveJson() {
+    const out = JSON.parse(JSON.stringify(state));
+    out.exported = new Date().toISOString();
+    out.version = APP.version;
+    download(fname("json"), JSON.stringify(out, null, 2), "application/json");
+    notify("Saved");
+}
+function loadJson(text) {
+    let d;
+    try { d = JSON.parse(text); }
+    catch (e) { notify("That file is not valid JSON", true); return; }
+    if (!d || typeof d !== "object") { notify("That file is not a saved " + APP.id + " file", true); return; }
+    if (d.app && d.app !== APP.id &&
+        !confirm(`That file was saved by "${d.app}", not ${APP.id}. Load it anyway?`)) return;
+    if (d.schema > APP.schema &&
+        !confirm("That file was saved by a newer version of this tool. Some fields may be dropped. Continue?")) return;
+    state = Object.assign(blankState(), d);
+    render();
+    notify("Loaded");
+}
+function reset() {
+    if (!confirm("Clear everything and start again?")) return;
+    state = blankState();
+    store.del("state");
+    render();
+    notify("Cleared");
+}
+
+/* ---------- meta binding ---------- */
+[["#mTitle", "title"], ["#mAuthor", "author"], ["#mDate", "date"]].forEach(([sel, key]) => {
+    $(sel).addEventListener("input", e => { state.meta[key] = e.target.value; persist(); });
+});
+
+/* ---------- render ---------- */
+function render() {
+    $("#mTitle").value  = state.meta.title  || "";
+    $("#mAuthor").value = state.meta.author || "";
+    $("#mDate").value   = state.meta.date   || today();
+    renderRows();   // DEMO
+    persist();
+}
+
+/* ---------- toolbar ---------- */
+$("#btnSave").addEventListener("click", saveJson);
+$("#btnLoad").addEventListener("click", () => $("#fileIn").click());
+$("#fileIn").addEventListener("change", e => {
+    if (e.target.files[0]) read(e.target.files[0], loadJson);
+    e.target.value = "";
+});
+$("#btnCsv").addEventListener("click", exportCsv);   // DEMO
+$("#btnPrint").addEventListener("click", () => window.print());
+$("#btnReset").addEventListener("click", reset);
+
+document.addEventListener("keydown", e => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === "s") { e.preventDefault(); saveJson(); }
+    if (k === "o") { e.preventDefault(); $("#fileIn").click(); }
+});
+
+/* ================= DEMO =================================================
+   Everything below shows the plumbing working. Delete it, along with the
+   demo markup and the two lines marked DEMO above, then build the real tool.
+   ======================================================================== */
+
+const STATUSES = ["open", "in progress", "done"];
+let hideDone = false;
+
+function renderRows() {
+    const host = $("#rows");
+    host.textContent = "";
+    const shown = state.items.filter(i => !hideDone || i.status !== "done");
+
+    if (!shown.length) {
+        host.appendChild(el("div", "empty",
+            state.items.length ? "Everything here is done." : "Nothing yet. Add a row, or drop a file below."));
+        updateStat();
+        return;
+    }
+
+    const t = el("table");
+    const head = el("tr");
+    ["Name", "Value", "Status", ""].forEach(h => head.appendChild(el("th", null, h)));
+    t.appendChild(head);
+
+    shown.forEach(item => {
+        const tr = el("tr");
+
+        ["name", "value"].forEach(key => {
+            const td = el("td"), inp = el("input", "field");
+            inp.type = "text";
+            inp.value = item[key];
+            inp.addEventListener("input", () => { item[key] = inp.value; persist(); });
+            td.appendChild(inp);
+            tr.appendChild(td);
+        });
+
+        const tdS = el("td"), sel = el("select", "field");
+        STATUSES.forEach(v => { const o = el("option", null, v); o.value = v; sel.appendChild(o); });
+        sel.value = item.status;
+        sel.addEventListener("change", () => { item.status = sel.value; persist(); renderRows(); });
+        tdS.appendChild(sel);
+        tr.appendChild(tdS);
+
+        const tdX = el("td", "noprint");
+        const b = el("button", "btn btn-sm btn-danger", "x");
+        b.title = "Remove row";
+        b.addEventListener("click", () => {
+            state.items = state.items.filter(x => x.id !== item.id);
+            persist();
+            renderRows();
+        });
+        tdX.appendChild(b);
+        tr.appendChild(tdX);
+
+        t.appendChild(tr);
+    });
+
+    host.appendChild(t);
+    updateStat();
+}
+
+function updateStat() {
+    const done = state.items.filter(i => i.status === "done").length;
+    const s = $("#stat");
+    s.textContent = "";
+    const put = (cls, txt) => s.appendChild(el("span", cls, txt));
+    put("a", String(state.items.length)); put(null, " rows, ");
+    put("ok", String(done));              put(null, " done, ");
+    put("warn", String(state.items.length - done)); put(null, " outstanding");
+}
+
+function exportCsv() {
+    if (!state.items.length) { notify("Nothing to export", true); return; }
+    const rows = [["name", "value", "status"]]
+        .concat(state.items.map(i => [i.name, i.value, i.status]));
+    download(fname("csv"), toCsv(rows), "text/csv;charset=utf-8");
+    notify("CSV exported");
+}
+
+$("#btnAdd").addEventListener("click", () => {
+    state.items.push({ id: Date.now() + "-" + state.items.length, name: "", value: "", status: "open" });
+    persist();
+    renderRows();
+});
+
+toggle($("#tgHide"), on => { hideDone = on; renderRows(); });
+
+dropzone($("#drop"), (() => {
+    const f = el("input");
+    f.type = "file";
+    f.hidden = true;
+    document.body.appendChild(f);
+    return f;
+})(), (text, file) => {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    const info = $("#dropinfo");
+    info.textContent = "";
+    info.appendChild(el("span", "ok", "read "));
+    info.appendChild(el("span", null, file.name + ", "));
+    info.appendChild(el("span", "a", String(lines.length)));
+    info.appendChild(el("span", null, ` lines, ${(file.size / 1024).toFixed(1)} KB`));
+    notify("File read");
+});
+
+/* ================= END DEMO ============================================= */
+
+restore();
+render();
+</script>
+</body>
+</html>

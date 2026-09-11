@@ -1,0 +1,105 @@
+    <div class="tabs" role="tablist">
+        <button class="tab" id="tab-play" role="tab" aria-selected="true" aria-controls="pane-play">play</button>
+        <button class="tab" id="tab-debrief" role="tab" aria-selected="false" aria-controls="pane-debrief">debrief</button>
+        <button class="tab" id="tab-history" role="tab" aria-selected="false" aria-controls="pane-history">history</button>
+        <button class="tab" id="tab-about" role="tab" aria-selected="false" aria-controls="pane-about">about</button>
+    </div>
+
+    <div class="body">
+
+        <div class="prompt noprint"><span class="path">~/break-glass</span> <span class="chev">&gt;</span> <span id="promptTxt">ready</span></div>
+        <div class="comment noprint"># incident response tabletop simulator, runs in your browser, nothing is uploaded</div>
+
+        <section id="pane-play" role="tabpanel" aria-labelledby="tab-play">
+            <div id="setup">
+                <div class="panel">
+                    <div class="section-header"><span>New incident</span></div>
+                    <div class="grid">
+                        <label class="f">Team or analyst<input type="text" class="field" id="cTeam" placeholder="Blue team"></label>
+                        <label class="f">Scenario<select class="field" id="cScen"></select></label>
+                        <label class="f">Difficulty<select class="field" id="cDiff"></select></label>
+                        <label class="f">Seed<input type="text" class="field" id="cSeed" placeholder="blank for random"></label>
+                    </div>
+                    <div class="row" style="margin-top:14px">
+                        <div class="toggle-item" style="gap:8px">
+                            <span class="toggle-label">Workshop mode</span>
+                            <div class="toggle-switch" id="tgWs" role="switch" aria-checked="false" tabindex="0"></div>
+                        </div>
+                        <div class="toggle-item" style="gap:8px">
+                            <span class="toggle-label">Analyst checks</span>
+                            <div class="toggle-switch" id="tgQuiz" role="switch" aria-checked="true" tabindex="0"></div>
+                        </div>
+                        <div class="spacer"></div>
+                        <button class="btn btn-primary" id="btnStart">Start incident</button>
+                    </div>
+                    <div class="note" style="margin-top:10px">The same seed and scenario gives every team the same organisation, posture and dice. Workshop mode adds discussion prompts and larger text for a projector. Analyst checks ask you to name the ATT&amp;CK technique or kill chain stage before the result is revealed; switching them off removes them from the score. Keys: 1-4 or A-D to choose, Enter to continue.</div>
+                </div>
+                <div class="panel">
+                    <div class="section-header"><span>Scenarios</span></div>
+                    <div id="scenList"></div>
+                </div>
+            </div>
+            <div id="game" hidden>
+                <div class="panel status" id="status"></div>
+                <div class="panel" id="stage"></div>
+                <div class="panel">
+                    <details><summary>Timeline</summary><div id="log" style="margin-top:10px"></div></details>
+                </div>
+                <div class="row"><div class="spacer"></div><button class="btn btn-sm btn-danger" id="btnAbandon">Abandon run</button></div>
+            </div>
+        </section>
+
+        <section id="pane-debrief" role="tabpanel" aria-labelledby="tab-debrief" hidden>
+            <div class="panel noprint" id="debriefBar">
+                <div class="row">
+                    <button class="btn btn-primary" id="btnMd">Save Markdown</button>
+                    <button class="btn" id="btnJson">Save JSON</button>
+                    <button class="btn" id="btnPrint">Print</button>
+                    <div class="spacer"></div>
+                    <button class="btn" id="btnAgain">New incident</button>
+                </div>
+            </div>
+            <div id="debrief" class="debrief"></div>
+        </section>
+
+        <section id="pane-history" role="tabpanel" aria-labelledby="tab-history" hidden>
+            <div class="panel">
+                <div class="section-header">
+                    <span>Runs in this browser</span>
+                    <div class="row">
+                        <button class="btn btn-sm" id="btnLoad">Load JSON</button>
+                        <button class="btn btn-sm btn-danger" id="btnClear">Clear all</button>
+                    </div>
+                </div>
+                <input type="file" id="fileIn" accept=".json,application/json" hidden>
+                <div id="hist"></div>
+                <div class="note" style="margin-top:10px">The last 30 finished runs are kept in this browser. Save JSON from the debrief to keep one for good, or to compare teams on another machine.</div>
+            </div>
+        </section>
+
+        <section id="pane-about" role="tabpanel" aria-labelledby="tab-about" hidden>
+            <div class="panel debrief">
+                <div class="section-header"><span>How it works</span></div>
+                <p class="note">You are the lead analyst. Each run drops you into a scenario at a fictional organisation with a randomised security posture. Every decision is rated from Poor to Best. Good decisions push the attacker back; weak ones give them momentum, raise business impact and cost stakeholder trust. Even the best move can fail: every good action rolls against odds shaped by difficulty and by the organisation's controls. Poor moves occasionally get a lucky break.</p>
+                <p class="note">Injects interrupt the plan: journalists, regulators, insurers, board members, and the things that really happen at 3am, like rats in the fibre duct. If attacker momentum reaches 6, the scenario escalates. If business impact reaches 100, the incident overwhelms the organisation and the run skips to lessons learned.</p>
+                <h3>Incident response phases</h3>
+                <p class="note">Runs follow the SANS PICERL lifecycle: Preparation, Identification, Containment, Eradication, Recovery and Lessons learned. NIST SP 800-61 covers the same ground as Preparation, Detection and Analysis, Containment Eradication and Recovery, and Post-incident activity; its 2025 revision maps them onto the CSF 2.0 functions.</p>
+                <h3>Cyber kill chain</h3>
+                <p class="note">Lockheed Martin's seven stages: Reconnaissance, Weaponisation, Delivery, Exploitation, Installation, Command and control, Actions on objectives. The strip under the meters lights up as the attacker's progress is observed. The debrief rebuilds the full chain, including the steps that happened before anyone noticed. Mapping ATT&amp;CK techniques onto kill chain stages is approximate, since post-compromise activity loops.</p>
+                <h3>MITRE ATT&amp;CK and ATLAS</h3>
+                <p class="note">Each situation is tagged with the ATT&amp;CK techniques behind it, and analyst checks ask you to name the technique or stage before the outcome is revealed. The check never uses a technique whose name is already on screen. The AI agent scenario uses MITRE ATLAS, the equivalent knowledge base for attacks on AI systems, and the plant scenario uses ATT&amp;CK for ICS.</p>
+                <h3>Scoring</h3>
+                <p class="note">Decision quality 40%, business impact 25%, stakeholder trust 15%, speed 10%, analyst checks 10%. With analyst checks off, the other four are scaled up to fill their share. Failed runs are capped at 70%. Grades run from A (CISO material) to F (front page news).</p>
+                <h3>Running a workshop</h3>
+                <ul>
+                    <li class="note">Turn on workshop mode and put it on the projector. Each decision shows a discussion prompt.</li>
+                    <li class="note">Give teams the same seed and scenario so they face the same organisation and the same dice, then compare debriefs.</li>
+                    <li class="note">Options are written so the right answer isn't the longest or the most detailed one. Make the room argue from reasoning, not wording.</li>
+                    <li class="note">Discuss before choosing. The rating and the reasoning appear after the choice, so the room can argue about it.</li>
+                    <li class="note">Finish with the saved Markdown debrief: it has the timeline, the missed moves, the attack path and a lessons list you can hand to the client.</li>
+                </ul>
+                <h3>Notes</h3>
+                <p class="note">Organisations, people and vendors are fictional. IP addresses come from documentation ranges. Regulatory timelines (GDPR 72 hours, NIS2 24 and 72 hours) are simplified for training and are not legal advice. Everything runs client side with no network calls.</p>
+            </div>
+        </section>
+
