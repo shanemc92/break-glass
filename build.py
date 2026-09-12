@@ -8,7 +8,7 @@ t = t.replace("<title>tool-name</title>", "<title>break-glass</title>")
 t = t.replace('<div class="titlebar-title">tool-name</div>', '<div class="titlebar-title">break-glass</div>')
 t = t.replace("   tool-name\n", "   break-glass\n", 1)
 t = t.replace("    section[hidden] { display: block !important; }\n", "")
-t = t.replace("</style>", src("extra.css") + "</style>", 1)
+t = t.replace("</style>", src("extra.css") + src("theme.css") + "</style>", 1)
 
 a = t.index('    <div class="tabs" role="tablist">')
 b = t.index('        <div class="note">tool-name v1.0.0')

@@ -561,6 +561,185 @@ pre.art { margin: 0 0 12px; font-size: 11.5px; color: var(--fg-dim); }
     .debrief .panel { border: none; padding: 0 0 10px; }
     .score-big { font-size: 24px; }
 }
+
+/* ============================================================
+   break-glass theme
+   Its own look, separate from the shared tool themes: modern
+   sans for reading, monospace for the terminal chrome, cyan
+   ops palette on near-black. Loaded last so it wins.
+   ============================================================ */
+:root {
+    --mono: 'JetBrains Mono', 'Fira Code', ui-monospace, 'SF Mono', Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font: var(--sans);
+    --wrap: 920px;
+}
+
+/* ---------- Tokens: dark ops (default) ---------- */
+:root,
+html[data-theme="dark"] {
+    color-scheme: dark;
+    --bg:          #04080a;
+    --card:        #0a1015;
+    --sunken:      #070c10;
+    --raised:      #101a20;
+    --line:        #1f2f37;
+    --line-soft:   #16242b;
+    --fg:          #d2e0e4;
+    --fg-dim:      #82979f;
+    --fg-faint:    #576a72;
+    --accent:      #34d8f0;
+    --accent-soft: rgba(52, 216, 240, 0.12);
+    --accent-ink:  #02141a;
+    --toggle-on:   #2ee6a8;
+    --toggle-ink:  #01120c;
+    --bad:         #ff5c6c;
+    --warn:        #ffb93d;
+    --ok:          #2ee6a8;
+    --radius:      12px;
+    --radius-sm:   7px;
+    --shadow:      0 0 0 1px rgba(52, 216, 240, 0.04), 0 26px 70px -26px rgba(0, 0, 0, 0.9);
+    --grid:        rgba(120, 230, 255, 0.035);
+}
+
+/* ---------- Tokens: light ---------- */
+html[data-theme="light"] {
+    color-scheme: light;
+    --bg:          #e6ebed;
+    --card:        #ffffff;
+    --sunken:      #f2f6f7;
+    --raised:      #fafcfd;
+    --line:        #ccd8dc;
+    --line-soft:   #e2eaec;
+    --fg:          #0b1418;
+    --fg-dim:      #4f5d63;
+    --fg-faint:    #7d8c92;
+    --accent:      #0b7186;
+    --accent-soft: rgba(11, 113, 134, 0.10);
+    --accent-ink:  #ffffff;
+    --toggle-on:   #0d7a5b;
+    --toggle-ink:  #ffffff;
+    --bad:         #c32233;
+    --warn:        #9a5a00;
+    --ok:          #0d7a5b;
+    --radius:      12px;
+    --radius-sm:   7px;
+    --shadow:      0 1px 2px rgba(12, 24, 28, 0.06), 0 16px 40px -18px rgba(12, 24, 28, 0.26);
+    --grid:        rgba(11, 113, 134, 0.045);
+}
+
+/* ---------- Page ---------- */
+body {
+    font-family: var(--font);
+    font-size: 14px;
+    background-color: var(--bg);
+    background-image:
+        radial-gradient(820px 400px at 50% -140px, var(--accent-soft), transparent 72%),
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: auto, 36px 36px, 36px 36px;
+    background-attachment: fixed;
+}
+
+/* ---------- Terminal chrome: monospace ---------- */
+.titlebar-title, .tab, .prompt, .comment, .section-header span, label.f, th,
+.kicker, .strip div, .strip-label, .chip, .clock, .reg, .meter .lab, .log,
+pre, pre.art, code, .field, .btn, .opt .k, .opt .q, .score-big, .grade,
+.toggle-label, .empty, details summary {
+    font-family: var(--mono);
+}
+.btn { letter-spacing: 0.01em; }
+.note, .narr, .disc, .why, .node-title, .debrief h3, .debrief li, .debrief p { font-family: var(--sans); }
+
+/* ---------- Window: break-glass strip across the top ---------- */
+.container { position: relative; }
+.container::before {
+    content: '';
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--bad) 0%, var(--warn) 26%, var(--accent) 62%, var(--ok) 100%);
+    opacity: 0.85;
+    z-index: 2;
+}
+
+/* ---------- Title bar: status LEDs instead of window dots ---------- */
+.titlebar { padding-top: 12px; }
+.dot { width: 8px; height: 8px; }
+.dot:nth-child(1) { background: var(--bad);  box-shadow: 0 0 9px -1px var(--bad); }
+.dot:nth-child(2) { background: var(--warn); box-shadow: 0 0 9px -1px var(--warn); }
+.dot:nth-child(3) { background: var(--ok);   box-shadow: 0 0 9px -1px var(--ok); }
+.titlebar-title { letter-spacing: 0.06em; color: var(--fg); }
+.titlebar-title::before { content: '// '; color: var(--accent); }
+
+/* ---------- Tabs ---------- */
+.tab { letter-spacing: 0.04em; }
+html[data-theme="dark"] .tab[aria-selected="true"] { text-shadow: 0 0 14px rgba(52, 216, 240, 0.45); }
+
+/* ---------- Prompt line with a live cursor ---------- */
+.prompt { color: var(--fg-dim); }
+.prompt .path { color: var(--accent); }
+.prompt #promptTxt { color: var(--fg); }
+.prompt::after {
+    content: '';
+    display: inline-block;
+    width: 7px;
+    height: 13px;
+    margin-left: 5px;
+    vertical-align: -2px;
+    background: var(--accent);
+    animation: bgblink 1.1s steps(1) infinite;
+}
+@keyframes bgblink { 0%, 55% { opacity: 1; } 56%, 100% { opacity: 0; } }
+
+/* ---------- Panels and section labels ---------- */
+.panel { border-color: var(--line); }
+.section-header span { letter-spacing: 0.12em; color: var(--accent); opacity: 0.85; }
+.section-header span::before { content: '// '; color: var(--fg-faint); }
+.node-title { letter-spacing: -0.01em; }
+
+/* ---------- Decisions ---------- */
+.opt { position: relative; }
+.opt .k { font-size: 12px; }
+.opt.chosen::before, .opt:hover:not(:disabled)::before {
+    content: '';
+    position: absolute;
+    left: -1px; top: -1px; bottom: -1px;
+    width: 2px;
+    border-radius: 2px 0 0 2px;
+    background: var(--accent);
+}
+
+/* ---------- Meters, strips, score ---------- */
+.bar { height: 7px; }
+html[data-theme="dark"] .bar.bad i  { box-shadow: 0 0 10px rgba(255, 92, 108, 0.5); }
+html[data-theme="dark"] .bar.warn i { box-shadow: 0 0 10px rgba(255, 185, 61, 0.5); }
+html[data-theme="dark"] .bar.ok i   { box-shadow: 0 0 10px rgba(46, 230, 168, 0.5); }
+.meter .lab { letter-spacing: 0.08em; text-transform: uppercase; }
+.strip-label { letter-spacing: 0.12em; text-transform: uppercase; }
+.strip div { border-radius: 5px; }
+html[data-theme="dark"] .strip .cur { box-shadow: 0 0 12px -2px rgba(52, 216, 240, 0.55); }
+html[data-theme="dark"] .strip .hit { box-shadow: 0 0 12px -2px rgba(255, 92, 108, 0.45); }
+.clock { letter-spacing: 0.04em; }
+.score-big { letter-spacing: -0.02em; }
+html[data-theme="dark"] .score-big { text-shadow: 0 0 22px rgba(52, 216, 240, 0.35); }
+
+/* ---------- Emergency actions ---------- */
+.btn-danger:hover { color: var(--bad); border-color: var(--bad); background: rgba(255, 92, 108, 0.08); }
+
+/* ---------- Print: keep one plain light palette ---------- */
+@media print {
+    :root, html[data-theme="dark"], html[data-theme="light"] {
+        color-scheme: light;
+        --bg: #ffffff; --card: #ffffff; --sunken: #fafafa; --raised: #ffffff;
+        --line: #999999; --line-soft: #cccccc;
+        --fg: #111111; --fg-dim: #555555; --fg-faint: #777777;
+        --accent: #0b4f8a; --accent-soft: transparent; --accent-ink: #ffffff;
+        --shadow: none; --grid: transparent;
+    }
+    body { background-image: none; }
+    .container::before, .prompt::after { display: none; }
+}
 </style>
 </head>
 <body>
