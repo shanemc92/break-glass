@@ -8,7 +8,7 @@ const HISTORY_MAX = 30;
 function blankState() {
     return { schema: APP.schema, app: APP.id,
              cfg: { team: "", scenario: "random", diff: "real", seed: "", workshop: false, quiz: true },
-             run: null, view: null, history: [] };
+             prof: { posture: {} }, run: null, view: null, history: [] };
 }
 let state = blankState();
 function persist() { store.set("state", JSON.stringify(state)); }
@@ -42,18 +42,107 @@ function table(head, rows) {
 function header(txt) { const h = el("div", "section-header"); h.appendChild(span(null, txt)); return h; }
 
 /* ---------- setup ---------- */
+const scnCar = { i: 0, sel: null, el: 0, timer: null, pauseHover: false, pauseOff: false, pauseManual: false, cards: [], dots: [] };
+const SCN_DWELL = 5200;
+const scnReduced = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function buildCarousel() {
+    const track = $("#scnTrack"), dots = $("#scnDots");
+    scnCar.cards = SCEN.map((s, i) => {
+        const c = el("div", "scn-card");
+        c.appendChild(el("div", "scn-idx", String(i + 1).padStart(2, "0")));
+        c.appendChild(el("h4", "scn-name", s.name));
+        const tg = el("div", "scn-tags");
+        (s.tags || []).forEach(t => tg.appendChild(el("span", "scn-chip", t)));
+        c.appendChild(tg);
+        c.appendChild(el("div", "scn-blurb", s.blurb));
+        c.appendChild(el("div", "scn-pick", "selected"));
+        c.setAttribute("role", "button");
+        c.tabIndex = 0;
+        c.addEventListener("click", () => (i === scnCar.i ? selectScn(i) : scnGo(i, true)));
+        c.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); i === scnCar.i ? selectScn(i) : scnGo(i, true); } });
+        track.appendChild(c);
+        return c;
+    });
+    scnCar.dots = SCEN.map((s, i) => {
+        const d = el("button", "scn-dot");
+        d.type = "button"; d.title = s.name; d.setAttribute("aria-label", s.name);
+        d.addEventListener("click", () => scnGo(i, true));
+        dots.appendChild(d);
+        return d;
+    });
+    $("#scnPrev").addEventListener("click", () => scnGo(scnCar.i - 1, true));
+    $("#scnNext").addEventListener("click", () => scnGo(scnCar.i + 1, true));
+    const car = $("#scnCarousel");
+    car.addEventListener("mouseenter", () => { scnCar.pauseHover = true; });
+    car.addEventListener("mouseleave", () => { scnCar.pauseHover = false; });
+    car.addEventListener("focusin", () => { scnCar.pauseHover = true; });
+    car.addEventListener("focusout", () => { scnCar.pauseHover = false; });
+    $("#scnPause").addEventListener("click", () => { scnCar.pauseManual = !scnCar.pauseManual; scnCar.el = 0; scnProgWidth(0); paintPauseBtn(); });
+    if (typeof IntersectionObserver === "function") {
+        new IntersectionObserver(es => { scnCar.pauseOff = !es[0].isIntersecting; }, { threshold: 0.2 }).observe(car);
+    }
+    layoutCarousel();
+    if (scnReduced) { $("#scnProg").style.display = "none"; $("#scnPause").style.display = "none"; }
+    else { scnCar.timer = setInterval(scnTick, 100); }
+}
+function scnPaused() { return scnCar.pauseHover || scnCar.pauseOff || scnCar.pauseManual; }
+function scnProgWidth(p) { const i = $("#scnProg").firstChild; if (i) i.style.width = (p * 100) + "%"; }
+function scnTick() {
+    if (scnPaused()) return;
+    scnCar.el += 100;
+    scnProgWidth(Math.min(1, scnCar.el / SCN_DWELL));
+    if (scnCar.el >= SCN_DWELL) scnGo(scnCar.i + 1, false);
+}
+function scnGo(i, manual) {
+    const n = SCEN.length;
+    scnCar.i = ((i % n) + n) % n;
+    scnCar.el = 0;
+    if (manual) scnProgWidth(0);
+    layoutCarousel();
+}
+function selectScn(i) {
+    scnCar.sel = SCEN[i].id;
+    state.cfg.scenario = scnCar.sel;
+    const dd = $("#cScen"); if (dd) dd.value = scnCar.sel;
+    persist();
+    layoutCarousel();
+}
+function scnSync(scenario) {
+    scnCar.sel = scenario && scenario !== "random" ? scenario : null;
+    if (scnCar.sel) { const idx = SCEN.findIndex(s => s.id === scnCar.sel); if (idx >= 0) scnCar.i = idx; }
+    if (scnCar.cards.length) layoutCarousel();
+}
+function layoutCarousel() {
+    const n = SCEN.length, a = scnCar.i;
+    scnCar.cards.forEach((c, i) => {
+        let d = i - a; if (d > n / 2) d -= n; if (d < -n / 2) d += n;
+        const ad = Math.abs(d), sign = d < 0 ? -1 : 1;
+        let x = d * 62, sc = 1, ry = 0, op = 1, z = 5, pe = "auto";
+        if (ad === 1) { sc = 0.82; ry = -d * 9; op = 0.4; z = 3; }
+        else if (ad === 2) { x = sign * 104; sc = 0.66; ry = -sign * 12; op = 0.12; z = 2; pe = "none"; }
+        else if (ad > 2) { x = sign * 120; sc = 0.6; op = 0; z = 1; pe = "none"; }
+        c.style.transform = "translate(calc(-50% + " + x + "%), -50%) scale(" + sc + ") rotateY(" + ry + "deg)";
+        c.style.opacity = op; c.style.zIndex = z; c.style.pointerEvents = pe;
+        c.classList.toggle("is-active", d === 0);
+        c.classList.toggle("is-sel", SCEN[i].id === scnCar.sel);
+    });
+    scnCar.dots.forEach((dt, i) => dt.classList.toggle("on", i === a));
+    $("#scnCount").textContent = String(a + 1).padStart(2, "0") + " / " + String(n).padStart(2, "0");
+}
+function paintPauseBtn() {
+    const b = $("#scnPause");
+    b.classList.toggle("on", !scnCar.pauseManual);
+    b.textContent = scnCar.pauseManual ? "paused" : "auto";
+    b.setAttribute("aria-pressed", String(!scnCar.pauseManual));
+}
 function initSetup() {
     const sel = $("#cScen");
     sel.appendChild(Object.assign(el("option", null, "Random"), { value: "random" }));
     SCEN.forEach(s => sel.appendChild(Object.assign(el("option", null, s.name), { value: s.id })));
     Object.keys(DIFF).forEach(k => $("#cDiff").appendChild(Object.assign(el("option", null, DIFF[k].name), { value: k })));
-    const list = $("#scenList");
-    SCEN.forEach(s => {
-        const row = el("div", "scn-row");
-        row.appendChild(el("b", null, s.name));
-        row.appendChild(el("div", "note", s.blurb));
-        list.appendChild(row);
-    });
+    buildCarousel();
+    $("#cScen").addEventListener("change", e => scnSync(e.target.value));
     [["#cTeam", "team"], ["#cSeed", "seed"]].forEach(([id, k]) =>
         $(id).addEventListener("input", e => { state.cfg[k] = e.target.value; persist(); }));
     [["#cScen", "scenario"], ["#cDiff", "diff"]].forEach(([id, k]) =>
@@ -65,6 +154,7 @@ function renderSetup() {
     $("#cTeam").value = state.cfg.team || "";
     $("#cSeed").value = state.cfg.seed || "";
     $("#cScen").value = state.cfg.scenario || "random";
+    scnSync(state.cfg.scenario);
     $("#cDiff").value = state.cfg.diff || "real";
     $("#tgWs").classList.toggle("active", !!state.cfg.workshop);
     $("#tgWs").setAttribute("aria-checked", String(!!state.cfg.workshop));
@@ -75,6 +165,58 @@ function renderSetup() {
 function applyWorkshop() {
     const on = state.run ? state.run.workshop : state.cfg.workshop;
     document.body.classList.toggle("ws", !!on);
+}
+
+/* ---------- custom profile ---------- */
+const PROF_FIELDS = {
+    cfOrg: [["org", "Organisation name", "Acme Freight"], ["domain", "Email domain", "acmefreight.ie"],
+            ["sector", "Sector", "Logistics"], ["staff", "Staff", "400"]],
+    cfPeople: [["ceo", "CEO", "random"], ["fd", "Finance Director", "random"], ["dpo", "DPO", "random"],
+               ["comms", "Comms lead", "random"], ["admin", "Infrastructure lead", "random"],
+               ["apclerk", "Accounts payable clerk", "random"], ["salesop", "Sales ops", "random"], ["dev", "Developer", "random"]],
+    cfPlaces: [["site", "Offsite backup or DR site", "the Cork DR site"], ["supplier", "Key supplier", "Delaney Packaging"],
+               ["saas", "CRM or SaaS platform", "Salesforce"], ["plantsite", "Plant or depot town", "Dublin"]]
+};
+function initCustom() {
+    Object.entries(PROF_FIELDS).forEach(([host, fields]) => fields.forEach(([k, label, ph]) => {
+        const l = el("label", "f", label), i = el("input", "field");
+        Object.assign(i, { type: "text", id: "pf-" + k, placeholder: ph, maxLength: 80 });
+        i.addEventListener("input", () => { state.prof[k] = i.value; persist(); });
+        $("#" + host).appendChild(kids(l, [i]));
+    }));
+    const nis = kids(el("label", "f", "NIS2 in scope"), [el("select", "field")]), ns = nis.lastChild;
+    ns.id = "pf-nis2";
+    [["", "Random"], ["yes", "Yes"], ["no", "No"]].forEach(([v, n]) => ns.appendChild(Object.assign(el("option", null, n), { value: v })));
+    ns.addEventListener("change", () => { state.prof.nis2 = ns.value; persist(); });
+    $("#cfOrg").appendChild(nis);
+    Object.keys(CONTROLS).forEach(k => {
+        const l = el("label", "f", CONTROLS[k].name), s = el("select", "field");
+        s.id = "pp-" + k;
+        s.appendChild(Object.assign(el("option", null, "Random"), { value: "" }));
+        CONTROLS[k].lv.forEach((n, i) => s.appendChild(Object.assign(el("option", null, n), { value: String(i) })));
+        s.addEventListener("change", () => {
+            if (s.value === "") delete state.prof.posture[k]; else state.prof.posture[k] = +s.value;
+            persist();
+        });
+        $("#cfPosture").appendChild(kids(l, [s]));
+    });
+    $("#tab-custom").addEventListener("click", renderCustom);
+}
+function renderCustom() {
+    const p = state.prof = Object.assign({ posture: {} }, state.prof);
+    Object.values(PROF_FIELDS).flat().forEach(([k]) => { $("#pf-" + k).value = p[k] || ""; });
+    $("#pf-nis2").value = p.nis2 || "";
+    Object.keys(CONTROLS).forEach(k => { $("#pp-" + k).value = [0, 1, 2].includes(p.posture[k]) ? String(p.posture[k]) : ""; });
+    const c = state.cfg, sc = scen(c.scenario);
+    $("#cfSettings").textContent = "Uses the play tab settings: " + (sc ? sc.name : "Random scenario") + ", " + DIFF[c.diff || "real"].name +
+        ", seed " + (c.seed || "random") + ", workshop " + (c.workshop ? "on" : "off") + ".";
+}
+function loadProfileJson(text) {
+    let d;
+    try { d = JSON.parse(text); } catch (e) { notify("That file is not valid JSON", true); return; }
+    if (!d || d.app !== APP.id || d.kind !== "profile" || !d.profile) { notify("That file is not a saved " + APP.id + " profile", true); return; }
+    state.prof = cleanProfile(d.profile);
+    persist(); renderCustom(); notify("Profile loaded");
 }
 
 /* ---------- game ---------- */
@@ -147,7 +289,7 @@ function renderBrief(r, host) {
     const prof = el("div");
     prof.appendChild(header("Organisation"));
     prof.appendChild(table(["", ""], [
-        ["Name", r.ctx.org], ["Sector", r.ctx.sector], ["Staff", r.ctx.staff],
+        [r.custom ? "Name (custom)" : "Name", r.ctx.org], ["Sector", r.ctx.sector], ["Staff", r.ctx.staff],
         ["CEO", r.ctx.ceo], ["Finance Director", r.ctx.fd], ["DPO", r.ctx.dpo],
         ["Comms lead", r.ctx.comms], ["Infrastructure", r.ctx.admin], ["NIS2 in scope", r.ctx.nis2 ? "Yes" : "No"]
     ]));
@@ -365,7 +507,7 @@ function renderDebrief() {
     sc.appendChild(el("div", "grade", "Grade " + s.grade[0] + ": " + s.grade[1]));
     sc.appendChild(el("p", null, s.outcome));
     const meta = table(["", ""], [
-        ["Scenario", d.sc.name], ["Organisation", r.ctx.org], ["Team", r.team],
+        ["Scenario", d.sc.name], ["Organisation", r.ctx.org + (r.custom ? " (custom)" : "")], ["Team", r.team],
         ["Difficulty", DIFF[r.diff].name], ["Seed", r.seed], ["Analyst checks", r.quizOn === false ? "Off" : "On"],
         ["Played", r.started.slice(0, 16).replace("T", " ")]
     ]);
@@ -483,7 +625,7 @@ function debriefMd(r) {
     if (!seen.size) L.push("- No decision gaps this run.");
     if (d.ll) L.push("", "### Headline improvement chosen", "", d.ll.choice + " (" + QLABEL[d.ll.q] + ")");
     if (d.pir) L.push("", "### Post-incident review approach", "", d.pir.choice + " (" + QLABEL[d.pir.q] + ")");
-    L.push("", "---", "Generated by " + APP.id + " v" + APP.version + ". Fictional organisation and scenario for training use.");
+    L.push("", "---", "Generated by " + APP.id + " v" + APP.version + (r.custom ? ". Custom organisation profile; the scenario is fictional and for training use." : ". Fictional organisation and scenario for training use."));
     return L.join("\n") + "\n";
 }
 const runName = (r, ext) => slug(r.team + "-" + r.sid + "-" + r.started.slice(0, 10)) + "." + ext;
@@ -525,6 +667,23 @@ $("#btnStart").addEventListener("click", () => {
     if (state.run && !confirm("Abandon the current run and start a new one?")) return;
     state.run = newRun(state.cfg);
     persist(); renderPlay();
+});
+$("#btnStartCustom").addEventListener("click", () => {
+    if (!profileUsed(state.prof)) { notify("Fill in at least one field, or use the play tab for a fully random run", true); return; }
+    if (state.run && !confirm("Abandon the current run and start a new one?")) return;
+    state.run = newRun(state.cfg, state.prof);
+    persist(); renderPlay(); tab("play");
+});
+$("#btnProfSave").addEventListener("click", () => {
+    const p = cleanProfile(state.prof);
+    download(slug((p.org || "custom") + "-profile") + ".json", JSON.stringify({ app: APP.id, kind: "profile", schema: APP.schema, profile: p }, null, 2), "application/json");
+    notify("Saved");
+});
+$("#btnProfLoad").addEventListener("click", () => $("#profIn").click());
+$("#profIn").addEventListener("change", e => { if (e.target.files[0]) read(e.target.files[0], loadProfileJson); e.target.value = ""; });
+$("#btnProfClear").addEventListener("click", () => {
+    if (!confirm("Clear the custom profile?")) return;
+    state.prof = { posture: {} }; persist(); renderCustom();
 });
 $("#btnAbandon").addEventListener("click", () => {
     if (!confirm("Abandon this run? It won't be scored.")) return;
@@ -569,9 +728,11 @@ document.addEventListener("keydown", e => {
 
 restore();
 initSetup();
+initCustom();
 if (state.run && !validRun(state.run)) { state.run = null; notify("A saved run from an older version was cleared"); }
 state.history = state.history.filter(h => h && h.result && scen(h.sid));
 if (!scen(state.cfg.scenario)) state.cfg.scenario = "random";
 renderPlay();
+renderCustom();
 renderHistory();
 renderDebrief();

@@ -1,5 +1,6 @@
     <div class="tabs" role="tablist">
         <button class="tab" id="tab-play" role="tab" aria-selected="true" aria-controls="pane-play">play</button>
+        <button class="tab" id="tab-custom" role="tab" aria-selected="false" aria-controls="pane-custom">custom</button>
         <button class="tab" id="tab-debrief" role="tab" aria-selected="false" aria-controls="pane-debrief">debrief</button>
         <button class="tab" id="tab-history" role="tab" aria-selected="false" aria-controls="pane-history">history</button>
         <button class="tab" id="tab-about" role="tab" aria-selected="false" aria-controls="pane-about">about</button>
@@ -32,11 +33,23 @@
                         <div class="spacer"></div>
                         <button class="btn btn-primary" id="btnStart">Start incident</button>
                     </div>
-                    <div class="note" style="margin-top:10px">The same seed and scenario gives every team the same organisation, posture and dice. Workshop mode adds discussion prompts and larger text for a projector. Analyst checks ask you to name the ATT&amp;CK technique or kill chain stage before the result is revealed; switching them off removes them from the score. Keys: 1-4 or A-D to choose, Enter to continue.</div>
+                    <div class="note" style="margin-top:10px">The same seed and scenario gives every team the same organisation, posture and dice. Workshop mode adds discussion prompts and larger text for a projector. Analyst checks ask you to name the ATT&amp;CK technique or kill chain stage before the result is revealed; switching them off removes them from the score. Keys: 1-4 or A-D to choose, Enter to continue. To use a real client's details and posture, fill in the custom tab.</div>
                 </div>
                 <div class="panel">
-                    <div class="section-header"><span>Scenarios</span></div>
-                    <div id="scenList"></div>
+                    <div class="section-header scn-head">
+                        <span>Scenarios</span>
+                        <div class="spacer"></div>
+                        <span class="scn-count" id="scnCount">01 / 20</span>
+                        <button type="button" class="scn-ctl on" id="scnPause" aria-pressed="true">auto</button>
+                    </div>
+                    <div class="scn-carousel" id="scnCarousel" aria-roledescription="carousel">
+                        <button type="button" class="scn-nav prev" id="scnPrev" aria-label="Previous scenario"></button>
+                        <button type="button" class="scn-nav next" id="scnNext" aria-label="Next scenario"></button>
+                        <div class="scn-stage"><div class="scn-track" id="scnTrack"></div></div>
+                        <div class="scn-progress" id="scnProg"><i></i></div>
+                        <div class="scn-dots" id="scnDots"></div>
+                        <div class="scn-hint note">Click the centred card to load that scenario, or a side card to bring it forward.</div>
+                    </div>
                 </div>
             </div>
             <div id="game" hidden>
@@ -46,6 +59,32 @@
                     <details><summary>Timeline</summary><div id="log" style="margin-top:10px"></div></details>
                 </div>
                 <div class="row"><div class="spacer"></div><button class="btn btn-sm btn-danger" id="btnAbandon">Abandon run</button></div>
+            </div>
+        </section>
+
+        <section id="pane-custom" role="tabpanel" aria-labelledby="tab-custom" hidden>
+            <div class="panel">
+                <div class="section-header">
+                    <span>Custom organisation</span>
+                    <div class="row">
+                        <button class="btn btn-sm" id="btnProfLoad">Load profile</button>
+                        <button class="btn btn-sm" id="btnProfSave">Save profile</button>
+                        <button class="btn btn-sm btn-danger" id="btnProfClear">Clear</button>
+                    </div>
+                </div>
+                <input type="file" id="profIn" accept=".json,application/json" hidden>
+                <div class="note">Put in the client's details and where their controls really are. Anything left blank or on Random is generated as normal, and the same seed still gives the same dice.</div>
+            </div>
+            <div class="panel"><div class="section-header"><span>Organisation</span></div><div class="grid" id="cfOrg"></div></div>
+            <div class="panel"><div class="section-header"><span>People</span></div><div class="grid" id="cfPeople"></div></div>
+            <div class="panel"><div class="section-header"><span>Places and suppliers</span></div><div class="grid" id="cfPlaces"></div></div>
+            <div class="panel"><div class="section-header"><span>Security posture</span></div><div class="grid" id="cfPosture"></div></div>
+            <div class="panel">
+                <div class="row">
+                    <div class="note" id="cfSettings"></div>
+                    <div class="spacer"></div>
+                    <button class="btn btn-primary" id="btnStartCustom">Start custom incident</button>
+                </div>
             </div>
         </section>
 
@@ -96,6 +135,7 @@
                     <li class="note">Give teams the same seed and scenario so they face the same organisation and the same dice, then compare debriefs.</li>
                     <li class="note">Options are written so the right answer isn't the longest or the most detailed one. Make the room argue from reasoning, not wording.</li>
                     <li class="note">Discuss before choosing. The rating and the reasoning appear after the choice, so the room can argue about it.</li>
+                    <li class="note">Use the custom tab to drop in the client's name, people and real posture so the scenario lands closer to home. Save the profile to reuse it.</li>
                     <li class="note">Finish with the saved Markdown debrief: it has the timeline, the missed moves, the attack path and a lessons list you can hand to the client.</li>
                 </ul>
                 <h3>Notes</h3>

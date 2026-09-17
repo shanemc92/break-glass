@@ -6,7 +6,7 @@ Browser-based incident response tabletop simulator. You are the lead analyst; ea
 
 ## What it does
 
-- Ten scenarios built on current attack methods: help desk social engineering to ESXi ransomware, edge VPN zero-day, AiTM token theft to invoice fraud, ClickFix infostealer to SaaS data extortion, indirect prompt injection against an internal AI agent, a North Korean fake IT worker, an npm supply chain worm, leaked cloud keys to S3 SSE-C ransom, hacktivists on an exposed OT control panel, and ransom DDoS as cover for credential stuffing.
+- Fifteen scenarios built on current attack methods: help desk social engineering to ESXi ransomware, edge VPN zero-day, AiTM token theft to invoice fraud, ClickFix infostealer to SaaS data extortion, indirect prompt injection against an internal AI agent, a North Korean fake IT worker, an npm supply chain worm, leaked cloud keys to S3 SSE-C ransom, hacktivists on an exposed OT control panel, ransom DDoS as cover for credential stuffing, a departing insider exfiltrating the customer database, a rogue cellular network implant, an MSP/RMM supply chain compromise, a destructive wiper disguised as ransomware, and an exposed storage bucket reported by a security researcher.
 - Full SANS PICERL lifecycle every run, ending in a scored lessons learned phase.
 - Every decision rated Poor to Best. Good actions still roll against odds shaped by difficulty and the organisation's controls; poor ones occasionally get lucky.
 - Branches: flagged paths (tip off the attacker, patch without checking, dismiss the evidence), heat-driven escalation, and a failure path when business impact hits 100.
@@ -14,6 +14,7 @@ Browser-based incident response tabletop simulator. You are the lead analyst; ea
 - Kill chain and MITRE ATT&CK (plus ATLAS and ATT&CK for ICS) tagging on every situation.
 - Optional analyst checks: name the technique or kill chain stage before the outcome is revealed. The check never uses a technique whose name is already on screen, and toggling checks off doesn't change the dice for a seed.
 - Scored debrief with summary, attack path, timeline, decision review and lessons learned. Save as Markdown or JSON, or print to PDF.
+- Custom mode: a separate tab to enter a client's organisation, people, suppliers and real control posture. Blank fields stay random, and profiles save and load as JSON for reuse.
 - Workshop mode: discussion prompts and projector-sized text. Seeds make every team face the same organisation and dice.
 
 ## Files

@@ -36,7 +36,7 @@ html[data-theme="dark"] {
     --radius:      12px;
     --radius-sm:   7px;
     --shadow:      0 0 0 1px rgba(52, 216, 240, 0.04), 0 26px 70px -26px rgba(0, 0, 0, 0.9);
-    --grid:        rgba(120, 230, 255, 0.035);
+    --grid:        rgba(120, 230, 255, 0.07);
 }
 
 /* ---------- Tokens: light ---------- */
@@ -50,7 +50,7 @@ html[data-theme="light"] {
     --line-soft:   #e2eaec;
     --fg:          #0b1418;
     --fg-dim:      #4f5d63;
-    --fg-faint:    #7d8c92;
+    --fg-faint:    #63727a;
     --accent:      #0b7186;
     --accent-soft: rgba(11, 113, 134, 0.10);
     --accent-ink:  #ffffff;
@@ -62,7 +62,7 @@ html[data-theme="light"] {
     --radius:      12px;
     --radius-sm:   7px;
     --shadow:      0 1px 2px rgba(12, 24, 28, 0.06), 0 16px 40px -18px rgba(12, 24, 28, 0.26);
-    --grid:        rgba(11, 113, 134, 0.045);
+    --grid:        rgba(11, 113, 134, 0.08);
 }
 
 /* ---------- Page ---------- */
@@ -72,9 +72,8 @@ body {
     background-color: var(--bg);
     background-image:
         radial-gradient(820px 400px at 50% -140px, var(--accent-soft), transparent 72%),
-        linear-gradient(var(--grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-    background-size: auto, 36px 36px, 36px 36px;
+        radial-gradient(var(--grid) 1.4px, transparent 1.4px);
+    background-size: auto, 34px 34px;
     background-attachment: fixed;
 }
 

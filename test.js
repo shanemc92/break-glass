@@ -1,8 +1,8 @@
 const fs=require('fs');
-const src=['data_core','data_injects','data_scen1','data_scen2','data_scen3','data_scen4','engine'].map(f=>fs.readFileSync('src/'+f+'.js','utf8')).join('\n');
+const src=['data_core','data_injects','data_scen1','data_scen2','data_scen3','data_scen4','data_scen5','data_scen6','engine'].map(f=>fs.readFileSync('src/'+f+'.js','utf8')).join('\n');
 const T=new Function(src+`
-;return {SCEN,INJ,TECH,CONTROLS,newRun,choose,cont,answerQuiz,getNode,sub,SHARED,KC,leaks,qwords};`)();
-const {SCEN,INJ,TECH,CONTROLS,newRun,choose,cont,answerQuiz,getNode,sub,SHARED,leaks}=T;
+;return {SCEN,SCEN_INJ,TECH,CONTROLS,newRun,choose,cont,answerQuiz,getNode,sub,SHARED,PREP_SET,PIR_SET,KC,leaks,qwords};`)();
+const {SCEN,SCEN_INJ,TECH,CONTROLS,newRun,choose,cont,answerQuiz,getNode,sub,SHARED,PREP_SET,PIR_SET,leaks}=T;
 let quizN=0, quizKc=0;
 const ORGS=new Function(src+';return ORGS;')();
 let errs=[];
@@ -13,7 +13,10 @@ SCEN.forEach(s=>{ s.nodes.forEach(n=>allNodes.push([s.id,n])); allNodes.push([s.
 });
 SCEN.forEach(s=>(s.orgs||[]).forEach(o=>{ if(!ORGS.some(x=>x[0]===o)) errs.push('unknown org '+o+' in '+s.id); }));
 if(new Set(SCEN.map(s=>s.id)).size!==SCEN.length) errs.push('duplicate scenario id');
-INJ.forEach(n=>allNodes.push(['inj',n])); Object.values(SHARED).forEach(n=>allNodes.push(['shared',n]));
+Object.keys(SCEN_INJ).forEach(k=>{ if(!SCEN.some(s=>s.id===k)) errs.push('SCEN_INJ key not a scenario: '+k); });
+SCEN.forEach(s=>{ if(!SCEN_INJ[s.id]||!SCEN_INJ[s.id].length) errs.push('no injects for '+s.id); });
+{ const ids=Object.values(SCEN_INJ).flat().map(n=>n.id); if(new Set(ids).size!==ids.length) errs.push('duplicate inject id'); }
+Object.values(SCEN_INJ).flat().forEach(n=>allNodes.push(['inj',n])); [...PREP_SET, ...PIR_SET, SHARED.FAIL].forEach(n=>allNodes.push(['shared',n]));
 const tokens=new Set();
 allNodes.forEach(([s,n])=>{
   (n.att||[]).forEach(t=>{ if(!TECH[t]) errs.push(s+' '+n.id+' tech '+t); });

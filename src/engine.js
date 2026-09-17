@@ -19,7 +19,7 @@ const ESC_AT = 6, MAX_INJ = 6, SERIOUS_P = 0.3, QUIZ_P = 0.65;
 
 const tname = id => TECH[id][0].replace(/\s*\(.*\)$/, "");
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const INJ_BY_ID = Object.fromEntries(INJ.map(i => [i.id, Object.assign({ inj: true }, i)]));
+const INJ_BY_ID = Object.fromEntries(Object.values(SCEN_INJ).flat().map(i => [i.id, Object.assign({ inj: true }, i)]));
 const scen = id => SCEN.find(s => s.id === id);
 
 function hashSeed(s) {
@@ -55,7 +55,7 @@ function fmtClock(run, h) {
 const fmtT = h => { const m = Math.round(h * 60); return "T+" + String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0"); };
 
 /* ---------- new run ---------- */
-function newRun(cfg) {
+function newRun(cfg, prof) {
     const seed = (cfg.seed || "").trim().toUpperCase() || Math.random().toString(36).slice(2, 8).toUpperCase();
     const run = {
         v: 1, id: Date.now().toString(36) + Math.floor(Math.random() * 1e4), seed, rs: hashSeed(seed),
@@ -66,12 +66,15 @@ function newRun(cfg) {
     run.sid = sc.id;
     const pool = sc.orgs ? ORGS.filter(x => sc.orgs.includes(x[0])) : ORGS.filter(x => !x[4]);
     const o = pick(run, pool);
-    const person = () => [pick(run, FIRST), pick(run, LAST)];
-    const fd = person(), ap = person(), dv = person();
+    const drawUniq = (arr, n) => { const a = arr.slice(), out = []; for (let k = 0; k < n; k++) out.push(a.splice(Math.floor(rnd(run) * a.length), 1)[0]); return out; };
+    const roles = ["ceo", "fd", "admin", "dpo", "comms", "apclerk", "salesop", "dev"];
+    const firsts = drawUniq(FIRST, roles.length), lasts = drawUniq(LAST, roles.length);
+    const P = {}; roles.forEach((r, k) => P[r] = [firsts[k], lasts[k]]);
+    const fd = P.fd, ap = P.apclerk, dv = P.dev;
     run.ctx = {
         org: o[0], sector: o[2].toLowerCase(), nis2: o[3], staff: String(250 + Math.floor(rnd(run) * 76) * 50),
-        ceo: person().join(" "), fd: fd.join(" "), fdlast: fd[1], admin: person().join(" "),
-        dpo: person().join(" "), comms: person().join(" "), apclerk: ap.join(" "), salesop: person().join(" "),
+        ceo: P.ceo.join(" "), fd: fd.join(" "), fdlast: fd[1], admin: P.admin.join(" "),
+        dpo: P.dpo.join(" "), comms: P.comms.join(" "), apclerk: ap.join(" "), salesop: P.salesop.join(" "),
         fdmail: (fd[0] + "." + fd[1]).toLowerCase() + "@" + o[1] + ".example",
         apmail: (ap[0] + "." + ap[1]).toLowerCase() + "@" + o[1] + ".example",
         site: pick(run, SITES), supplier: pick(run, SUPPLIERS), saas: pick(run, SAAS),
@@ -84,6 +87,7 @@ function newRun(cfg) {
         const r = rnd(run);
         run.posture[k] = r < w[0] ? 0 : r < w[0] + w[1] ? 1 : 2;
     });
+    applyProfile(run, prof); // after all context dice, so a profile never shifts a seed
     Object.assign(run, {
         heat: 3 + (run.posture.edr === 0 ? 1 : 0), impact: 5, trust: 55 + run.posture.plan * 5,
         clock: 0, effort: 0, flags: {}, log: [], kc: {}, tech: [], quiz: { ok: 0, n: 0 },
@@ -93,10 +97,50 @@ function newRun(cfg) {
     return run;
 }
 
+/* ---------- custom profile ---------- */
+const PROF_TEXT = ["org", "domain", "sector", "staff", "ceo", "fd", "dpo", "comms", "admin", "apclerk", "salesop", "dev", "site", "supplier", "saas", "plantsite"];
+function cleanProfile(p) {
+    const out = { posture: {} };
+    if (!p || typeof p !== "object") return out;
+    PROF_TEXT.forEach(k => { const v = String(p[k] == null ? "" : p[k]).replace(/\s+/g, " ").trim().slice(0, 80); if (v) out[k] = v; });
+    if (out.staff) { out.staff = out.staff.replace(/\D/g, ""); if (!out.staff) delete out.staff; }
+    if (p.nis2 === "yes" || p.nis2 === "no") out.nis2 = p.nis2;
+    Object.keys(CONTROLS).forEach(k => { const v = p.posture && p.posture[k]; if ([0, 1, 2].includes(v)) out.posture[k] = v; });
+    return out;
+}
+function profileUsed(p) { const c = cleanProfile(p); return Object.keys(c).length > 1 || Object.keys(c.posture).length > 0; }
+function applyProfile(run, prof) {
+    if (!profileUsed(prof)) return;
+    const p = cleanProfile(prof), c = run.ctx;
+    run.custom = true;
+    ["org", "staff", "ceo", "fd", "dpo", "comms", "admin", "apclerk", "salesop", "dev", "site", "supplier", "saas", "plantsite"]
+        .forEach(k => { if (p[k]) c[k] = p[k]; });
+    if (p.sector) c.sector = /^[A-Z]{2}/.test(p.sector) ? p.sector : p.sector.charAt(0).toLowerCase() + p.sector.slice(1);
+    if (p.nis2) c.nis2 = p.nis2 === "yes";
+    let domain = c.orgslug + ".example";
+    if (p.domain) domain = p.domain.toLowerCase().replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/[\/@\s].*$/, "");
+    else if (p.org) domain = (p.org.toLowerCase().replace(/[^a-z0-9]/g, "") || c.orgslug) + ".example";
+    c.orgslug = domain.split(".")[0];
+    const parts = s => s.split(" "), low = s => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const mail = s => { const n = parts(s); return (n.length > 1 ? low(n[0]) + "." + low(n[n.length - 1]) : low(n[0])) + "@" + domain; };
+    const fd = parts(c.fd), dv = parts(c.dev);
+    c.fdlast = fd[fd.length - 1];
+    c.fdmail = mail(c.fd);
+    c.apmail = mail(c.apclerk);
+    c.devuser = low(dv[0].charAt(0) + (dv.length > 1 ? dv[dv.length - 1] : dv[0].slice(1)));
+    c.agent = "Ask" + c.org.split(" ")[0];
+    Object.keys(p.posture).forEach(k => { run.posture[k] = p.posture[k]; });
+}
+
 /* ---------- graph ---------- */
 function getNode(run, id) {
     const sc = scen(run.sid);
     if (id === "BRIEF") return { id: "BRIEF", ph: "prep", title: sc.name, text: sc.intro, opts: [{ t: "Take the call" }] };
+    if (id === "PREP" || id === "PIR") {
+        const set = id === "PREP" ? PREP_SET : PIR_SET;
+        const idx = Math.max(0, SCEN.findIndex(s => s.id === run.sid));
+        return set[idx % set.length];
+    }
     if (SHARED[id]) return SHARED[id];
     if (id === "ESC") return sc.esc;
     if (id === "LL") return sc.ll;
@@ -153,9 +197,8 @@ const effPh = (run, n) => (n.inj || n.id === "ESC") ? run.curPh : n.ph;
 /* ---------- injects and quiz ---------- */
 function pickInject(run, ph) {
     if (run.injUsed.length >= MAX_INJ || run.sinceInj < 1) return null;
-    const sc = scen(run.sid);
-    const ok = INJ.filter(i => !run.injUsed.includes(i.id) && (!i.ph || i.ph.includes(ph)) &&
-        (!i.tag || sc.tags.includes(i.tag)) && (!i.cond || i.cond(run)));
+    const ok = (SCEN_INJ[run.sid] || []).filter(i => !run.injUsed.includes(i.id) && (!i.ph || i.ph.includes(ph)) &&
+        (!i.cond || i.cond(run)));
     const serious = ok.filter(i => i.kind === "s"), quirky = ok.filter(i => i.kind === "q");
     const r = rnd(run);
     if (serious.length && r < SERIOUS_P) return pick(run, serious);
